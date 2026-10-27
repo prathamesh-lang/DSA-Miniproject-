@@ -1,0 +1,18 @@
+# Compiled Executables and Objects
+*.exe
+*.o
+*.obj
+playlist
+playlist.exe
+
+# Build and Debug directories/files
+*.pdb
+*.ilk
+build/
+bin/
+
+# IDE and Editor configurations
+.vscode/
+.vs/
+*.swp
+*~
