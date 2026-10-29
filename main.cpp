@@ -2,7 +2,7 @@
  * ============================================================================
  * Project Title : Music Playlist Management System
  * Data Structure: Doubly Linked List
- * Technology    : C++ (C++17 Standard)
+ * Technology    : C++
  * Authors       : Prathamesh Patil (Roll No. 48, PRN: U251A189)
  *                 Omkar Rane (Roll No. 50, PRN: U251A194)
  * Guide         : Prof. Vaishali Dhawas
@@ -25,13 +25,10 @@
 
 #include <iostream>
 #include <string>
-#include <sstream>
 #include <iomanip>
-#include <cctype>
-#include <algorithm>
 
 // ============================================================================
-// 1. DATA STRUCTURE: SONG NODE
+// 1. DATA STRUCTURE: SONG NODE (DOUBLY LINKED LIST NODE)
 // ============================================================================
 struct Song {
     int songID;             // Unique identifier for the song
@@ -42,58 +39,38 @@ struct Song {
     Song* next;             // Pointer to the next song in the playlist
 
     // Constructor to initialise a new song node
-    Song(int id, const std::string& t, const std::string& a, int d)
-        : songID(id), title(t), artist(a), duration(d), prev(nullptr), next(nullptr) {}
+    Song(int id, const std::string& t, const std::string& a, int d) {
+        songID = id;
+        title = t;
+        artist = a;
+        duration = d;
+        prev = nullptr;
+        next = nullptr;
+    }
 };
 
 // ============================================================================
-// 2. HELPER UTILITIES: INPUT VALIDATION & STRING FORMATTING
+// 2. HELPER UTILITIES: SIMPLE INPUT & FORMATTING
 // ============================================================================
 
 /**
- * Trims leading and trailing whitespace from a string.
+ * Formats duration in seconds into a friendly mm:ss string using std::to_string.
  */
-static std::string trim(const std::string& str) {
-    size_t first = str.find_first_not_of(" \t\r\n");
-    if (first == std::string::npos) return "";
-    size_t last = str.find_last_not_of(" \t\r\n");
-    return str.substr(first, (last - first + 1));
-}
-
-/**
- * Converts a string to lowercase for case-insensitive comparisons.
- */
-static std::string toLower(const std::string& str) {
-    std::string result = str;
-    std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) {
-        return static_cast<char>(std::tolower(c));
-    });
-    return result;
-}
-
-/**
- * Formats duration in seconds into a friendly mm:ss string.
- */
-static std::string formatDuration(int totalSeconds) {
+std::string formatDuration(int totalSeconds) {
     int minutes = totalSeconds / 60;
     int seconds = totalSeconds % 60;
-    std::ostringstream oss;
-    oss << minutes << "m " << (seconds < 10 ? "0" : "") << seconds << "s (" << totalSeconds << "s)";
-    return oss.str();
+    std::string secStr = (seconds < 10 ? "0" : "") + std::to_string(seconds);
+    return std::to_string(minutes) + "m " + secStr + "s (" + std::to_string(totalSeconds) + "s)";
 }
 
 /**
- * Reads a non-empty string safely from std::cin using std::getline.
+ * Reads a non-empty string safely from user input.
  */
-static std::string readString(const std::string& prompt) {
+std::string readString(const std::string& prompt) {
     std::string input;
     while (true) {
         std::cout << prompt;
-        if (!std::getline(std::cin, input)) {
-            std::cin.clear();
-            return "";
-        }
-        input = trim(input);
+        std::getline(std::cin, input);
         if (!input.empty()) {
             return input;
         }
@@ -102,29 +79,20 @@ static std::string readString(const std::string& prompt) {
 }
 
 /**
- * Reads an integer safely from std::cin, rejecting letters, symbols, or invalid numbers.
+ * Reads an integer safely from user input, clearing invalid characters on error.
  */
-static int readInteger(const std::string& prompt) {
-    std::string line;
+int readInteger(const std::string& prompt) {
+    int value;
     while (true) {
         std::cout << prompt;
-        if (!std::getline(std::cin, line)) {
-            std::cin.clear();
-            continue;
-        }
-        line = trim(line);
-        if (line.empty()) {
-            std::cout << "  [!] Input cannot be empty. Please enter a valid number.\n";
-            continue;
-        }
-
-        std::istringstream iss(line);
-        int value;
-        char extra;
-        if ((iss >> value) && !(iss >> extra)) {
+        if (std::cin >> value) {
+            std::cin.ignore(10000, '\n'); // Clear newline character from buffer
             return value;
         }
+        // Handle invalid input (e.g. user entered characters instead of numbers)
         std::cout << "  [!] Invalid numeric input. Please enter a valid integer.\n";
+        std::cin.clear();
+        std::cin.ignore(10000, '\n');
     }
 }
 
@@ -139,19 +107,19 @@ private:
 
 public:
     // Constructor: Initialises an empty doubly linked list
-    Playlist() : head(nullptr), tail(nullptr), current(nullptr) {}
+    Playlist() {
+        head = nullptr;
+        tail = nullptr;
+        current = nullptr;
+    }
 
     // Destructor: Cleans up all dynamically allocated memory
     ~Playlist() {
         clear();
     }
 
-    // Disable copy constructor and copy assignment to prevent shallow copy issues
-    Playlist(const Playlist&) = delete;
-    Playlist& operator=(const Playlist&) = delete;
-
     /**
-     * Checks if the playlist contains any songs.
+     * Checks if the playlist is empty.
      */
     bool isEmpty() const {
         return head == nullptr;
@@ -175,13 +143,8 @@ public:
 
     /**
      * 1. ADD SONG
-     * Appends a new song to the end of the doubly linked list.
-     * Handles:
-     *   - Duplicate ID rejection.
-     *   - Non-positive duration rejection.
-     *   - Empty playlist (head, tail, and current point to the new node).
-     *   - Non-empty playlist (appended to tail; current pointer preserved).
-     * Time Complexity: O(1) appending (plus O(n) check for unique ID).
+     * Appends a new song to the end (tail) of the doubly linked list.
+     * Time Complexity: O(1) appending (plus O(n) uniqueness check).
      */
     void addSong() {
         std::cout << "\n----------------------------------------\n";
@@ -194,7 +157,7 @@ public:
             return;
         }
 
-        // Verify duplicate ID
+        // Check if ID already exists
         if (findSongByID(id) != nullptr) {
             std::cout << "\n[Error] Song with ID " << id << " already exists in the playlist.\n";
             std::cout << "        Each song must have a unique ID. Operation cancelled.\n";
@@ -225,7 +188,6 @@ public:
             tail->next = newNode;
             newNode->prev = tail;
             tail = newNode;
-            // Preserves existing current pointer selection
             std::cout << "\n[Success] Added \"" << title << "\" to the end of the playlist.\n";
         }
     }
@@ -233,15 +195,8 @@ public:
     /**
      * 2. DELETE SONG
      * Searches for a song by ID and removes it from the doubly linked list.
-     * Handles all edge cases:
-     *   - Empty playlist.
-     *   - Song ID not found.
-     *   - Deleting the only node in the list.
-     *   - Deleting the head node.
-     *   - Deleting the tail node.
-     *   - Deleting a middle node.
-     *   - Deleting the currently selected song (reassigns current safely).
-     * Time Complexity: O(n) to locate node, O(1) to relink pointers.
+     * Relinks adjacent pointers and safely reclaims memory.
+     * Time Complexity: O(n)
      */
     void deleteSong() {
         std::cout << "\n----------------------------------------\n";
@@ -267,29 +222,26 @@ public:
         // Update 'current' pointer if the deleted node is the active song
         if (wasCurrent) {
             if (delNode->next != nullptr) {
-                // Next remaining song available
                 current = delNode->next;
             } else if (delNode->prev != nullptr) {
-                // Otherwise fallback to previous remaining song
                 current = delNode->prev;
             } else {
-                // List will become empty
                 current = nullptr;
             }
         }
 
         // Relink neighbouring pointers
         if (delNode == head && delNode == tail) {
-            // Case A: Deleting the ONLY node in the playlist
+            // Case A: Deleting the ONLY node
             head = nullptr;
             tail = nullptr;
             current = nullptr;
         } else if (delNode == head) {
-            // Case B: Deleting the FIRST (head) node
+            // Case B: Deleting the HEAD node
             head = head->next;
             head->prev = nullptr;
         } else if (delNode == tail) {
-            // Case C: Deleting the LAST (tail) node
+            // Case C: Deleting the TAIL node
             tail = tail->prev;
             tail->next = nullptr;
         } else {
@@ -298,7 +250,7 @@ public:
             delNode->next->prev = delNode->prev;
         }
 
-        // Free the allocated memory
+        // Free the memory
         delete delNode;
 
         std::cout << "\n[Success] Song \"" << deletedTitle << "\" (ID: " << id << ") was removed from the playlist.\n";
@@ -311,10 +263,7 @@ public:
 
     /**
      * 3. SEARCH SONG
-     * Provides options to search either by unique Song ID or by Song Title.
-     * Features:
-     *   - Case-insensitive matching for song titles.
-     *   - Safe handling of nonexistent songs.
+     * Searches either by unique Song ID or by Song Title.
      * Time Complexity: O(n)
      */
     void searchSong() const {
@@ -348,13 +297,11 @@ public:
             }
         } else if (choice == 2) {
             std::string searchTitle = readString("Enter Song Title to search: ");
-            std::string lowerQuery = toLower(searchTitle);
-
             Song* temp = head;
             int matchCount = 0;
 
             while (temp != nullptr) {
-                if (toLower(temp->title) == lowerQuery) {
+                if (temp->title == searchTitle) {
                     if (matchCount == 0) {
                         std::cout << "\n[Found] Matching Song(s):\n";
                         std::cout << "  --------------------------------------------------\n";
@@ -384,7 +331,7 @@ public:
      * 4. DISPLAY PLAYLIST
      * Traverses the doubly linked list from head to tail and prints each song.
      * Highlights the currently playing song with a marker '-> [CURRENT]'.
-     * Displays summary statistics (total songs, total duration).
+     * Displays total songs and total duration.
      * Time Complexity: O(n)
      */
     void displayPlaylist() const {
@@ -444,8 +391,7 @@ public:
     /**
      * 5. NEXT SONG
      * Moves the 'current' pointer forward to current->next.
-     * Boundary check: If already at tail, displays boundary notice and keeps selection.
-     * Non-circular navigation.
+     * Boundary check: If already at tail, cannot move forward.
      * Time Complexity: O(1)
      */
     void nextSong() {
@@ -459,13 +405,11 @@ public:
         }
 
         if (current->next != nullptr) {
-            // Advance current pointer to the next song node
             current = current->next;
             std::cout << "[Action] Moved forward to the next song.\n";
             std::cout << "         Now Playing: \"" << current->title << "\" by " << current->artist 
                       << " [" << formatDuration(current->duration) << "]\n";
         } else {
-            // Already at the last node (tail)
             std::cout << "[Boundary] You are already at the last song in the playlist.\n";
             std::cout << "           Cannot move forward. Still playing: \"" << current->title << "\".\n";
         }
@@ -474,8 +418,7 @@ public:
     /**
      * 6. PREVIOUS SONG
      * Moves the 'current' pointer backward to current->prev.
-     * Boundary check: If already at head, displays boundary notice and keeps selection.
-     * Non-circular navigation.
+     * Boundary check: If already at head, cannot move backward.
      * Time Complexity: O(1)
      */
     void previousSong() {
@@ -489,13 +432,11 @@ public:
         }
 
         if (current->prev != nullptr) {
-            // Move current pointer back to the previous song node
             current = current->prev;
             std::cout << "[Action] Moved backward to the previous song.\n";
             std::cout << "         Now Playing: \"" << current->title << "\" by " << current->artist 
                       << " [" << formatDuration(current->duration) << "]\n";
         } else {
-            // Already at the first node (head)
             std::cout << "[Boundary] You are already at the first song in the playlist.\n";
             std::cout << "           Cannot move backward. Still playing: \"" << current->title << "\".\n";
         }
@@ -503,8 +444,7 @@ public:
 
     /**
      * 7. CLEANUP & MEMORY MANAGEMENT
-     * Safely traverses the entire doubly linked list from head,
-     * deletes each node, and resets head, tail, and current to nullptr.
+     * Traverses the entire doubly linked list from head and deletes each node.
      * Time Complexity: O(n)
      */
     void clear() {
